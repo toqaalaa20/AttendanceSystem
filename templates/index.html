@@ -23,7 +23,8 @@
             margin-bottom: 20px;
         }
 
-        #captureButton {
+        #captureButton,
+        #uploadButton {
             padding: 10px;
             font-size: 16px;
             cursor: pointer;
@@ -32,9 +33,11 @@
             border: none;
             border-radius: 5px;
             transition: background-color 0.3s;
+            margin-bottom: 10px;
         }
 
-        #captureButton:hover {
+        #captureButton:hover,
+        #uploadButton:hover {
             background-color: #45a049;
         }
 
@@ -48,21 +51,34 @@
             margin-top: 20px;
             font-size: 18px;
         }
+
+        #uploadedImage {
+            width: 80%;
+            max-width: 600px;
+            border: 2px solid #333;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
     </style>
 </head>
 <body>
     <h1>Face Recognition Attendance</h1>
     <video id="video" width="640" height="480" autoplay playsinline></video>
     <button id="captureButton" onclick="captureImage()">Take Attendance</button>
+    <button id="uploadButton" onclick="uploadImage()">Upload Image</button>
     <div id="loadingSpinner">Processing... <span>&#9203;</span></div>
     <div id="recognizedNames"></div>
+    <img id="uploadedImage" alt="Uploaded Image">
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const video = document.getElementById('video');
             const captureButton = document.getElementById('captureButton');
+            const uploadButton = document.getElementById('uploadButton');
             const loadingSpinner = document.getElementById('loadingSpinner');
             const recognizedNamesDiv = document.getElementById('recognizedNames');
+            const uploadedImage = document.getElementById('uploadedImage');
 
             navigator.mediaDevices.getUserMedia({ video: true })
                 .then(function (stream) {
@@ -75,6 +91,7 @@
             window.captureImage = function () {
                 loadingSpinner.style.display = 'inline-block';
                 captureButton.disabled = true;
+                uploadButton.disabled = true;
 
                 const canvas = document.createElement('canvas');
                 const context = canvas.getContext('2d');
@@ -95,15 +112,76 @@
                     console.log('Response from server:', data);
                     loadingSpinner.style.display = 'none';
                     captureButton.disabled = false;
+                    uploadButton.disabled = false;
 
                     // Display recognized names
                     recognizedNamesDiv.innerText = data.names.join(', ');
+
+                    // Hide the uploaded image
+                    uploadedImage.style.display = 'none';
                 })
                 .catch(error => {
                     console.error('Error sending image to server: ', error);
                     loadingSpinner.style.display = 'none';
                     captureButton.disabled = false;
+                    uploadButton.disabled = false;
                 });
+            };
+
+            window.uploadImage = function () {
+                loadingSpinner.style.display = 'inline-block';
+                captureButton.disabled = true;
+                uploadButton.disabled = true;
+
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+
+                // Trigger the file input dialog
+                input.click();
+
+                input.onchange = function () {
+                    const file = input.files[0];
+
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = function () {
+                            const imgData = reader.result;
+
+                            // Display the uploaded image
+                            uploadedImage.src = imgData;
+                            uploadedImage.style.display = 'block';
+
+                            fetch('/upload_image', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({ image: imgData }),
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                console.log('Response from server:', data);
+                                loadingSpinner.style.display = 'none';
+                                uploadButton.disabled = false;
+
+                                // Display recognized names
+                                recognizedNamesDiv.innerText = data.names.join(', ');
+                            })
+                            .catch(error => {
+                                console.error('Error sending image to server: ', error);
+                                loadingSpinner.style.display = 'none';
+                                uploadButton.disabled = false;
+                            });
+                        };
+
+                        // Read the selected file as a data URL
+                        reader.readAsDataURL(file);
+                    } else {
+                        loadingSpinner.style.display = 'none';
+                        uploadButton.disabled = false;
+                    }
+                };
             };
         });
     </script>
