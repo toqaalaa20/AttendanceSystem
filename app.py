@@ -25,6 +25,7 @@ else:
 font = cv2.FONT_HERSHEY_SIMPLEX
 
 # Initiate some global variable
+unique_names = set()  # Use a set to track unique names
 data = {'Name': [], 'Time': [], 'Id': []}
 id_names = {0: 'None', 1: 'Arwa', 2: 'Mariam', 3: 'Toqa'}  # Replace with your actual IDs and names
 
@@ -35,8 +36,6 @@ def index():
 def recognize_faces(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     faces = faceCascade.detectMultiScale(gray, scaleFactor=1.2, minNeighbors=5, minSize=(30, 30))
-
-    unique_names = set()  # Use a set to track unique names
 
     for (x, y, w, h) in faces:
         id, confidence = recognizer.predict(gray[y:y + h, x:x + w])
@@ -75,11 +74,6 @@ def take_attendance():
         df = pd.DataFrame(data)
         df.to_excel('attendance.xlsx', index=False)
 
-        # Clear the data dictionary after processing
-        data['Name'].clear()
-        data['Time'].clear()
-        data['Id'].clear()
-
         return jsonify({'status': 'success', 'names': recognized_names})
 
     return jsonify({'status': 'error', 'message': 'No image data received'})
@@ -100,11 +94,6 @@ def upload_image():
 
         df = pd.DataFrame(data)
         df.to_excel('attendance.xlsx', index=False)
-
-        # Clear the data dictionary after processing
-        data['Name'].clear()
-        data['Time'].clear()
-        data['Id'].clear()
 
         return jsonify({'status': 'success', 'names': recognized_names})
 
