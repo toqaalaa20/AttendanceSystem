@@ -9,6 +9,7 @@ from PIL import Image
 MAX_FACES_PER_VIDEO = 131
 DATASET_PATH = "dataset"
 TRAINER_PATH = "trainer.yml"
+VIDEOS_PATH = "videos"
 
 
 def generate_frames(video_path: str, face_id: int):
@@ -45,10 +46,9 @@ def generate_frames(video_path: str, face_id: int):
 
 def generate_dataset():
     """Generate dataset from the videos"""
-    videos_path = "Videos"
     person_id = 1
-    for video in os.listdir(videos_path):
-        video_path = os.path.join(videos_path, video)
+    for video in os.listdir(VIDEOS_PATH):
+        video_path = os.path.join(VIDEOS_PATH, video)
         generate_frames(video_path, person_id)
         person_id += 1
 
