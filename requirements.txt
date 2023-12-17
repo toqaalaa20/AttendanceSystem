@@ -1,0 +1,6 @@
+Flask
+opencv-python-contrib
+pandas
+Pillow
+matplotlib
+openpyxl
