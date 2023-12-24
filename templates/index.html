@@ -185,5 +185,29 @@
             };
         });
     </script>
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
+        // TODO: Add SDKs for Firebase products that you want to use
+        // https://firebase.google.com/docs/web/setup#available-libraries
+      
+        // Your web app's Firebase configuration
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        const firebaseConfig = {
+          apiKey: "AIzaSyAB84uqKJPHX_gvcnebeIONFzj5BzdwjpY",
+          authDomain: "attendancesystemapp-1a2bf.firebaseapp.com",
+          projectId: "attendancesystemapp-1a2bf",
+          storageBucket: "attendancesystemapp-1a2bf.appspot.com",
+          messagingSenderId: "817944684627",
+          appId: "1:817944684627:web:dc912d70cbf5afbcaf7ea6",
+          measurementId: "G-B842C8T2N3"
+        };
+      
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+      </script>
+    
 </body>
 </html>
