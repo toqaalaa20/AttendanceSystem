@@ -1,5 +1,6 @@
 Flask
-opencv-python-contrib
+opencv-python
+opencv-contrib-python
 pandas
 Pillow
 matplotlib
