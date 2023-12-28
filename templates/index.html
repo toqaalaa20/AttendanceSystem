@@ -1,189 +1,181 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Face Recognition Attendance</title>
     <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-        }
+      body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        margin: 0;
+      }
 
-        #video {
-            width: 80%;
-            max-width: 600px;
-            border: 2px solid #333;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
+      #video {
+        width: 80%;
+        max-width: 600px;
+        border: 2px solid #333;
+        border-radius: 8px;
+        margin-bottom: 20px;
+      }
 
-        #captureButton,
-        #uploadButton {
-            padding: 10px;
-            font-size: 16px;
-            cursor: pointer;
-            background-color: #4caf50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            transition: background-color 0.3s;
-            margin-bottom: 10px;
-        }
+      #captureButton,
+      #uploadButton {
+        padding: 10px;
+        font-size: 16px;
+        cursor: pointer;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        transition: background-color 0.3s;
+        margin-bottom: 10px;
+      }
 
-        #captureButton:hover,
-        #uploadButton:hover {
-            background-color: #45a049;
-        }
+      #captureButton:hover,
+      #uploadButton:hover {
+        background-color: #45a049;
+      }
 
-        #loadingSpinner {
-            display: none;
-            margin-top: 10px;
-            font-size: 18px;
-        }
+      #loadingSpinner {
+        display: none;
+        margin-top: 10px;
+        font-size: 18px;
+      }
 
-        #recognizedNames {
-            margin-top: 20px;
-            font-size: 18px;
-        }
+      #recognizedNames {
+        margin-top: 20px;
+        font-size: 18px;
+      }
 
-        #uploadedImage {
-            width: 80%;
-            max-width: 600px;
-            border: 2px solid #333;
-            border-radius: 8px;
-            margin-top: 20px;
-            display: none;
-        }
+      #uploadedImage {
+        width: 80%;
+        max-width: 600px;
+        border: 2px solid #333;
+        border-radius: 8px;
+        margin-top: 20px;
+        display: none;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <h1>Face Recognition Attendance</h1>
     <video id="video" width="640" height="480" autoplay playsinline></video>
     <button id="captureButton" onclick="captureImage()">Take Attendance</button>
-    <button id="uploadButton" onclick="uploadImage()">Upload Image</button>
+    <button id="uploadButton">Upload Image</button>
     <div id="loadingSpinner">Processing... <span>&#9203;</span></div>
     <div id="recognizedNames"></div>
-    <img id="uploadedImage" alt="Uploaded Image">
+    <img id="uploadedImage" alt="Uploaded Image" />
+  </body>
+  <script>
+    const API = "http://18.184.135.128:80";
+    const video = document.getElementById("video");
+    const captureButton = document.getElementById("captureButton");
+    const uploadButton = document.getElementById("uploadButton");
+    const loadingSpinner = document.getElementById("loadingSpinner");
+    const recognizedNamesDiv = document.getElementById("recognizedNames");
+    const uploadedImage = document.getElementById("uploadedImage");
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const video = document.getElementById('video');
-            const captureButton = document.getElementById('captureButton');
-            const uploadButton = document.getElementById('uploadButton');
-            const loadingSpinner = document.getElementById('loadingSpinner');
-            const recognizedNamesDiv = document.getElementById('recognizedNames');
-            const uploadedImage = document.getElementById('uploadedImage');
+    // navigator.mediaDevices
+    //   .getUserMedia({ video: true })
+    //   .then(function (stream) {
+    //     video.srcObject = stream;
+    //   })
+    //   .catch(function (error) {
+    //     console.error("Error accessing camera: ", error);
+    //   });
 
-            navigator.mediaDevices.getUserMedia({ video: true })
-                .then(function (stream) {
-                    video.srcObject = stream;
-                })
-                .catch(function (error) {
-                    console.error('Error accessing camera: ', error);
-                });
+    async function getAttendance(imgData, successCallback, errorCallback) {
+      fetch(`${API}/upload_image`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ image: imgData }),
+      })
+        .then((response) => response.json())
+        .then(successCallback)
+        .catch(errorCallback);
+    }
 
-            window.captureImage = function () {
-                loadingSpinner.style.display = 'inline-block';
-                captureButton.disabled = true;
-                uploadButton.disabled = true;
+    async function captureImage() {
+      loadingSpinner.style.display = "inline-block";
+      captureButton.disabled = true;
+      uploadButton.disabled = true;
 
-                const canvas = document.createElement('canvas');
-                const context = canvas.getContext('2d');
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-                const imgData = canvas.toDataURL('image/jpeg');
-                fetch('/upload_image', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ image: imgData }),
-                })
-                .then(response => response.json())
-                .then(data => {
-                    console.log('Response from server:', data);
-                    loadingSpinner.style.display = 'none';
-                    captureButton.disabled = false;
-                    uploadButton.disabled = false;
+      const imgData = canvas.toDataURL("image/jpeg");
+      await getAttendance(
+        imgData,
+        (successCallback = (data) => {
+          loadingSpinner.style.display = "none";
+          captureButton.disabled = false;
+          uploadButton.disabled = false;
+          recognizedNamesDiv.innerText = data.names.join(", ");
+          uploadedImage.style.display = "none";
+        }),
+        (errorCallback = (error) => {
+          console.error("Error sending image to server: ", error);
+          loadingSpinner.style.display = "none";
+          captureButton.disabled = false;
+          uploadButton.disabled = false;
+        })
+      );
+    }
 
-                    // Display recognized names
-                    recognizedNamesDiv.innerText = data.names.join(', ');
+    async function uploadImage() {
+      loadingSpinner.style.display = "inline-block";
+      captureButton.disabled = true;
+      uploadButton.disabled = true;
 
-                    // Hide the uploaded image
-                    uploadedImage.style.display = 'none';
-                })
-                .catch(error => {
-                    console.error('Error sending image to server: ', error);
-                    loadingSpinner.style.display = 'none';
-                    captureButton.disabled = false;
-                    uploadButton.disabled = false;
-                });
-            };
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
 
-            window.uploadImage = function () {
-                loadingSpinner.style.display = 'inline-block';
-                captureButton.disabled = true;
-                uploadButton.disabled = true;
+      input.click();
 
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.accept = 'image/*';
+      input.onchange = function () {
+        const file = input.files[0];
 
-                // Trigger the file input dialog
-                input.click();
+        if (file == null) {
+          loadingSpinner.style.display = "none";
+          uploadButton.disabled = false;
+          return;
+        }
+        const reader = new FileReader();
+        reader.onloadend = async function () {
+          const imgData = reader.result;
+          uploadedImage.src = imgData;
+          uploadedImage.style.display = "block";
+          await getAttendance(
+            imgData,
+            (successCallback = (data) => {
+              loadingSpinner.style.display = "none";
+              uploadButton.disabled = false;
+              recognizedNamesDiv.innerText = data.names.join(", ");
+              video.style.display = "none";
+            }),
+            (errorCallback = (error) => {
+              console.error("Error sending image to server: ", error);
+              loadingSpinner.style.display = "none";
+              uploadButton.disabled = false;
+            })
+          );
+        };
+        reader.readAsDataURL(file);
+      };
+    }
 
-                input.onchange = function () {
-                    const file = input.files[0];
-
-                    if (file) {
-                        const reader = new FileReader();
-                        reader.onloadend = function () {
-                            const imgData = reader.result;
-
-                            // Display the uploaded image
-                            uploadedImage.src = imgData;
-                            uploadedImage.style.display = 'block';
-
-                            fetch('/upload_image', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                },
-                                body: JSON.stringify({ image: imgData }),
-                            })
-                            .then(response => response.json())
-                            .then(data => {
-                                console.log('Response from server:', data);
-                                loadingSpinner.style.display = 'none';
-                                uploadButton.disabled = false;
-
-                                // Display recognized names
-                                recognizedNamesDiv.innerText = data.names.join(', ');
-                            })
-                            .catch(error => {
-                                console.error('Error sending image to server: ', error);
-                                loadingSpinner.style.display = 'none';
-                                uploadButton.disabled = false;
-                            });
-                        };
-
-                        // Read the selected file as a data URL
-                        reader.readAsDataURL(file);
-                    } else {
-                        loadingSpinner.style.display = 'none';
-                        uploadButton.disabled = false;
-                    }
-                };
-            };
-        });
-    </script>
-</body>
+    uploadButton.addEventListener("click", uploadImage);
+    captureButton.addEventListener("click", captureImage);
+  </script>
 </html>
