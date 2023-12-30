@@ -9,6 +9,8 @@ import numpy as np
 import pandas as pd
 from flask_cors import CORS
 
+from generate_dataset import VIDEOS_PATH
+
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
@@ -29,14 +31,25 @@ font = cv2.FONT_HERSHEY_SIMPLEX
 
 unique_names = set()  # Use a set to track unique names
 data = {"Name": [], "Time": [], "Id": []}
-id_to_names = {
-    0: "None",
-    1: "Arwa",
-    2: "Mariam",
-    3: "Toqa",
-}
+id_to_names = dict()
+
 ATTENDANCE_SHEET_PATH = "attendance.xlsx"
 
+def dict_for_id_to_names() -> None:
+    """Build the dictionary for converting the IDs to names
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
+    #The name of the videos has the form <name>_<id>.mp4
+    for video in os.listdir(VIDEOS_PATH):
+        name = os.path.split(video)[-1].split('_')[0]
+        id = int(os.path.split(video)[-1].split('_')[1].split(".")[0])
+        id_to_names[int(id)] = name
+    
 
 @app.route("/")
 def index():
@@ -55,14 +68,19 @@ def _recognize_faces(img: np.ndarray) -> np.ndarray:
     """
     gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     faces = faceCascade.detectMultiScale(
-        gray_img, scaleFactor=1.2, minNeighbors=5, minSize=(30, 30)
+        gray_img, scaleFactor=1.1, minNeighbors=4, minSize=(5, 5)
     )
 
     for x, y, w, h in faces:
         face_id, distance = recognizer.predict(gray_img[y : y + h, x : x + w])
         if distance >= 100:
             continue
+
+        if len(id_to_names) == 0:
+            dict_for_id_to_names()
         name = id_to_names[face_id]
+
+        print("Recognized name ", name)
 
         if name in unique_names:
             continue
@@ -101,12 +119,12 @@ def upload_image():
 
     img = _recognize_faces(img)
 
-    recognized_names = [id_to_names[id] for id in data["Id"]]
+    recognized_faces = [[id, id_to_names[id]] for id in data["Id"]]
 
     df = pd.DataFrame(data)
     df.to_excel(ATTENDANCE_SHEET_PATH, index=False)
 
-    return jsonify({"status": "success", "names": recognized_names})
+    return jsonify({"status": "success", "id_names": recognized_faces})
 
 
 if __name__ == "__main__":
