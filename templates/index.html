@@ -15,15 +15,15 @@
         margin: 0;
       }
 
-      #video {
+      #imageContainer {
         width: 80%;
         max-width: 600px;
         border: 2px solid #333;
-        border-radius: 8px;
+        border-radius: 8px; 
         margin-bottom: 20px;
+        overflow: hidden; 
       }
 
-      #captureButton,
       #uploadButton {
         padding: 10px;
         font-size: 16px;
@@ -36,7 +36,6 @@
         margin-bottom: 10px;
       }
 
-      #captureButton:hover,
       #uploadButton:hover {
         background-color: #45a049;
       }
@@ -53,129 +52,124 @@
       }
 
       #uploadedImage {
+        width: 100%;
+        display: none;
+      }
+
+      #attendanceTable {
         width: 80%;
         max-width: 600px;
-        border: 2px solid #333;
-        border-radius: 8px;
+        border-collapse: collapse;
         margin-top: 20px;
-        display: none;
+      }
+
+      #attendanceTable th, #attendanceTable td {
+        border: 1px solid #333;
+        padding: 8px;
+        text-align: left;
       }
     </style>
   </head>
   <body>
     <h1>Face Recognition Attendance</h1>
-    <video id="video" width="640" height="480" autoplay playsinline></video>
-    <button id="captureButton" onclick="captureImage()">Take Attendance</button>
+    <div id="imageContainer">
+      <!-- Container for displaying the uploaded image -->
+      <img id="uploadedImage" alt="Uploaded Image" />
+    </div>
     <button id="uploadButton">Upload Image</button>
     <div id="loadingSpinner">Processing... <span>&#9203;</span></div>
-    <div id="recognizedNames"></div>
-    <img id="uploadedImage" alt="Uploaded Image" />
-  </body>
-  <script>
-    const API = "http://18.184.135.128:80";
-    const video = document.getElementById("video");
-    const captureButton = document.getElementById("captureButton");
-    const uploadButton = document.getElementById("uploadButton");
-    const loadingSpinner = document.getElementById("loadingSpinner");
-    const recognizedNamesDiv = document.getElementById("recognizedNames");
-    const uploadedImage = document.getElementById("uploadedImage");
 
-    // navigator.mediaDevices
-    //   .getUserMedia({ video: true })
-    //   .then(function (stream) {
-    //     video.srcObject = stream;
-    //   })
-    //   .catch(function (error) {
-    //     console.error("Error accessing camera: ", error);
-    //   });
+    <!-- Table for displaying recognized names and IDs -->
+    <table id="attendanceTable">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>ID</th>
+        </tr>
+      </thead>
+      <tbody id="attendanceTableBody"></tbody>
+    </table>
+    
+    <script>
+      const API = "http://18.184.135.128:80";
+      const uploadButton = document.getElementById("uploadButton");
+      const loadingSpinner = document.getElementById("loadingSpinner");
+      const uploadedImage = document.getElementById("uploadedImage");
+      const attendanceTableBody = document.getElementById("attendanceTableBody");
 
-    async function getAttendance(imgData, successCallback, errorCallback) {
-      fetch(`${API}/upload_image`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ image: imgData }),
-      })
-        .then((response) => response.json())
-        .then(successCallback)
-        .catch(errorCallback);
-    }
-
-    async function captureImage() {
-      loadingSpinner.style.display = "inline-block";
-      captureButton.disabled = true;
-      uploadButton.disabled = true;
-
-      const canvas = document.createElement("canvas");
-      const context = canvas.getContext("2d");
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      const imgData = canvas.toDataURL("image/jpeg");
-      await getAttendance(
-        imgData,
-        (successCallback = (data) => {
-          loadingSpinner.style.display = "none";
-          captureButton.disabled = false;
-          uploadButton.disabled = false;
-          recognizedNamesDiv.innerText = data.names.join(", ");
-          uploadedImage.style.display = "none";
-        }),
-        (errorCallback = (error) => {
-          console.error("Error sending image to server: ", error);
-          loadingSpinner.style.display = "none";
-          captureButton.disabled = false;
-          uploadButton.disabled = false;
+      async function getAttendance(imgData, successCallback, errorCallback) {
+        fetch(`${API}/upload_image`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ image: imgData }),
         })
-      );
-    }
+          .then((response) => response.json())
+          .then(successCallback)
+          .catch(errorCallback);
+      }
 
-    async function uploadImage() {
-      loadingSpinner.style.display = "inline-block";
-      captureButton.disabled = true;
-      uploadButton.disabled = true;
+      async function uploadImage() {
+        loadingSpinner.style.display = "inline-block";
+        uploadButton.disabled = true;
 
-      const input = document.createElement("input");
-      input.type = "file";
-      input.accept = "image/*";
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "image/*";
 
-      input.click();
+        input.click();
+        input.onchange = function () {
+          const file = input.files[0];
 
-      input.onchange = function () {
-        const file = input.files[0];
-
-        if (file == null) {
-          loadingSpinner.style.display = "none";
-          uploadButton.disabled = false;
-          return;
-        }
-        const reader = new FileReader();
-        reader.onloadend = async function () {
-          const imgData = reader.result;
-          uploadedImage.src = imgData;
-          uploadedImage.style.display = "block";
-          await getAttendance(
-            imgData,
-            (successCallback = (data) => {
-              loadingSpinner.style.display = "none";
-              uploadButton.disabled = false;
-              recognizedNamesDiv.innerText = data.names.join(", ");
-              video.style.display = "none";
-            }),
-            (errorCallback = (error) => {
-              console.error("Error sending image to server: ", error);
-              loadingSpinner.style.display = "none";
-              uploadButton.disabled = false;
-            })
-          );
+          if (file == null) {
+            loadingSpinner.style.display = "none";
+            uploadButton.disabled = false;
+            return;
+          }
+          const reader = new FileReader();
+          reader.onloadend = async function () {
+            const imgData = reader.result;
+            uploadedImage.src = imgData;
+            uploadedImage.style.display = "block";
+            await getAttendance(
+              imgData,
+              (successCallback = (data) => {
+                loadingSpinner.style.display = "none";
+                uploadButton.disabled = false;
+                // Update the table with recognized names and IDs
+                updateAttendanceTable(data);
+              }),
+              (errorCallback = (error) => {
+                console.error("Error sending image to server: ", error);
+                loadingSpinner.style.display = "none";
+                uploadButton.disabled = false;
+              })
+            );
+          };
+          reader.readAsDataURL(file);
         };
-        reader.readAsDataURL(file);
-      };
-    }
+      }
 
-    uploadButton.addEventListener("click", uploadImage);
-    captureButton.addEventListener("click", captureImage);
-  </script>
+      function updateAttendanceTable(students) {
+        attendanceTableBody.innerHTML = "";
+
+        students.id_names.forEach((data) => {
+          const row = document.createElement("tr");
+          const nameCell = document.createElement("td");
+          const idCell = document.createElement("td");
+
+          nameCell.textContent = data[1];
+          idCell.textContent = data[0];
+
+          row.appendChild(nameCell);
+          row.appendChild(idCell);
+
+          attendanceTableBody.appendChild(row);
+        });
+      }
+
+      uploadButton.addEventListener("click", uploadImage);
+    </script>
+  </body>
 </html>
