@@ -95,7 +95,7 @@ def _recognize_faces(img: np.ndarray) -> np.ndarray:
 @app.route("/upload_image", methods=["POST"])
 def upload_image():
     """Upload image endpoint for the Flask web application."""
-    image_data = request.json.get("image", "")
+    image_data = request.data.decode("utf-8")
     if not image_data:
         return jsonify({"status": "error", "message": "No image data received"})
 
@@ -115,4 +115,4 @@ def upload_image():
 
 if __name__ == "__main__":
     # load faces after the app is initialized
-    app.run(debug=True)
+    app.run()

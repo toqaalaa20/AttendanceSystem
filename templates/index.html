@@ -71,6 +71,7 @@
     <div id="imageContainer">
       <!-- Container for displaying the uploaded image -->
       <img
+        name="image"
         id="uploadedImage"
         alt="Uploaded Image"
         height="500px"
@@ -92,8 +93,8 @@
     </table>
 
     <script>
-      // const API = "http://34.201.110.242:80";
-      const API = "http://127.0.0.1:5000";
+      const API = "http://52.71.254.171:80";
+      // const API = "http://127.0.0.1:5000";
       const uploadButton = document.getElementById("uploadButton");
       const loadingSpinner = document.getElementById("loadingSpinner");
       const uploadedImage = document.getElementById("uploadedImage");
@@ -102,12 +103,13 @@
       );
 
       async function getAttendance(imgData, successCallback, errorCallback) {
-        fetch(`${API}/upload_image`, {
+        fetch(`http://52.71.254.171:80/upload_image`, {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
+            Accept: "application/json",
+            "Content-Type": "text/plain",
           },
-          body: JSON.stringify({ image: imgData }),
+          body: imgData,
         })
           .then((response) => response.json())
           .then(successCallback)
