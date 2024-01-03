@@ -2,54 +2,44 @@
 from datetime import datetime
 import base64
 import os
+import face_recognition
 
 from flask import Flask, render_template, request, jsonify
 import cv2
 import numpy as np
-import pandas as pd
+
 from flask_cors import CORS
 
-from generate_dataset import VIDEOS_PATH
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-recognizer = cv2.face.LBPHFaceRecognizer_create()
-TRAINER_PATH = "trainer.yml"
-if os.path.exists(TRAINER_PATH):
-    recognizer.read(TRAINER_PATH)
-else:
-    print(f"Cannot find file {TRAINER_PATH}")
-
-CASCADE_WEIGHTS_PATH = "haarcascade_frontalface_default.xml"
-if os.path.exists(CASCADE_WEIGHTS_PATH):
-    faceCascade = cv2.CascadeClassifier(CASCADE_WEIGHTS_PATH)
-else:
-    print(f"Cannot find file {CASCADE_WEIGHTS_PATH}")
-
-font = cv2.FONT_HERSHEY_SIMPLEX
-
-unique_names = set()  # Use a set to track unique names
+unique_names = set()  # Used to track unique names
+known_face_names = []
+known_face_encodings = []
 data = {"Name": [], "Time": [], "Id": []}
-id_to_names = dict()
+name_to_id = {}
+FACES_DIRECTORY = "faces"
 
-ATTENDANCE_SHEET_PATH = "attendance.xlsx"
 
-def dict_for_id_to_names() -> None:
-    """Build the dictionary for converting the IDs to names
+def load_faces():
+    """Load the faces from the faces directory."""
+    for face in os.listdir(FACES_DIRECTORY):
+        face_path = os.path.join(FACES_DIRECTORY, face)
+        face_image = face_recognition.load_image_file(face_path)
+        face_encoding = face_recognition.face_encodings(face_image)[0]
+        known_face_encodings.append(face_encoding)
+        # name of the file is <face_name>_<id>_<photo_id>.jpg
+        face_name = face.split(".")[0].split("_")[0]
+        face_id = int(face.split(".")[0].split("_")[1])
+        name_to_id[face_name] = face_id
+        known_face_names.append(face_name)
 
-    Args:
-        None.
 
-    Returns:
-        None.
-    """
-    #The name of the videos has the form <name>_<id>.mp4
-    for video in os.listdir(VIDEOS_PATH):
-        name = os.path.split(video)[-1].split('_')[0]
-        id = int(os.path.split(video)[-1].split('_')[1].split(".")[0])
-        id_to_names[int(id)] = name
-    
+print("[INFO] Loading faces...")
+load_faces()
+print(f"[INFO] Collected {len(known_face_encodings)} faces encoding.")
+
 
 @app.route("/")
 def index():
@@ -66,41 +56,38 @@ def _recognize_faces(img: np.ndarray) -> np.ndarray:
     Returns:
         Image with names of recognized faces written on top.
     """
-    gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    faces = faceCascade.detectMultiScale(
-        gray_img, scaleFactor=1.1, minNeighbors=4, minSize=(5, 5)
-    )
+    print("[INFO] Loading image...")
+    face_locations = face_recognition.face_locations(img)
+    face_encodings = face_recognition.face_encodings(img, face_locations)
 
-    for x, y, w, h in faces:
-        face_id, distance = recognizer.predict(gray_img[y : y + h, x : x + w])
-        if distance >= 100:
-            continue
+    face_names = []
+    print("[INFO] Comparing faces...")
+    for face_encoding in face_encodings:
+        matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
+        name = "Unknown"
 
-        if len(id_to_names) == 0:
-            dict_for_id_to_names()
-        name = id_to_names[face_id]
+        if True in matches:
+            first_match_index = matches.index(True)
+            name = known_face_names[first_match_index]
 
-        print("Recognized name ", name)
-
-        if name in unique_names:
-            continue
-
-        unique_names.add(name)
-
-        confidence = round(100 - distance)
-        data["Name"].append(name)
-        data["Time"].append(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-        data["Id"].append(face_id)
-
-        cv2.putText(
-            img=img,
-            text=f"{name} ({confidence}%)",
-            org=(x + 5, y - 5),
-            fontFace=font,
-            fontScale=1,
-            color=(255, 255, 255),
-            thickness=2,
+        face_distances = face_recognition.face_distance(
+            known_face_encodings, face_encoding
         )
+        best_match_index = np.argmin(face_distances)
+        if matches[best_match_index]:
+            name = known_face_names[best_match_index]
+
+        face_names.append(name)
+
+    for face_name in face_names:
+        if face_name in unique_names or face_name == "Unknown":
+            continue
+
+        unique_names.add(face_name)
+
+        data["Name"].append(face_name)
+        data["Time"].append(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        data["Id"].append(name_to_id[face_name])
 
     return img
 
@@ -109,7 +96,6 @@ def _recognize_faces(img: np.ndarray) -> np.ndarray:
 def upload_image():
     """Upload image endpoint for the Flask web application."""
     image_data = request.json.get("image", "")
-
     if not image_data:
         return jsonify({"status": "error", "message": "No image data received"})
 
@@ -119,13 +105,14 @@ def upload_image():
 
     img = _recognize_faces(img)
 
-    recognized_faces = [[id, id_to_names[id]] for id in data["Id"]]
+    recognized_faces = [[name_to_id[name], name] for name in data["Name"]]
 
-    df = pd.DataFrame(data)
-    df.to_excel(ATTENDANCE_SHEET_PATH, index=False)
+    # df = pd.DataFrame(data)
+    # df.to_excel(ATTENDANCE_SHEET_PATH, index=False)
 
     return jsonify({"status": "success", "id_names": recognized_faces})
 
 
 if __name__ == "__main__":
+    # load faces after the app is initialized
     app.run(debug=True)

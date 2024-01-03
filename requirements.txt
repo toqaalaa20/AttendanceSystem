@@ -6,3 +6,4 @@ Pillow
 matplotlib
 openpyxl
 flask-cors
+face-recognition
