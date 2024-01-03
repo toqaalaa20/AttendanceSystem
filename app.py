@@ -89,6 +89,14 @@ def _recognize_faces(img: np.ndarray) -> np.ndarray:
         data["Time"].append(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         data["Id"].append(name_to_id[face_name])
 
+    # for (top, right, bottom, left), name in zip(face_locations, face_names):
+    #     cv2.rectangle(img, (left, top), (right, bottom), (0, 0, 255), 2)
+    #     cv2.rectangle(
+    #         img, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED
+    #     )
+    #     font = cv2.FONT_HERSHEY_DUPLEX
+    #     cv2.putText(img, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 1)
+
     return img
 
 
@@ -104,6 +112,7 @@ def upload_image():
     img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
 
     img = _recognize_faces(img)
+    # cv2.imwrite(f'{data["Name"][-1]}.jpg', img)
 
     recognized_faces = [[name_to_id[name], name] for name in data["Name"]]
 

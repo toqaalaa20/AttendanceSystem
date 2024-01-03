@@ -5,6 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Face Recognition Attendance</title>
+    <link rel="icon" href="https://imgbob.co/i/M6Qr.png" />
     <style>
       body {
         display: flex;
@@ -13,6 +14,7 @@
         justify-content: center;
         min-height: 100vh;
         margin: 0;
+        background-color: #f2f2f2;
       }
 
       #imageContainer {
@@ -64,33 +66,49 @@
         padding: 8px;
         text-align: left;
       }
+
+      img {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        max-height: 25rem;
+      }
+
+      .container {
+        text-align: center;
+        background-color: white;
+        border-radius: 10px;
+        padding: 0.7em;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-width: 60%;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        margin: 1em 1em;
+      }
     </style>
   </head>
   <body>
-    <h1>Face Recognition Attendance</h1>
-    <div id="imageContainer">
-      <!-- Container for displaying the uploaded image -->
-      <img
-        name="image"
-        id="uploadedImage"
-        alt="Uploaded Image"
-        height="500px"
-        width="300px"
-      />
-    </div>
-    <button id="uploadButton">Upload Image</button>
-    <div id="loadingSpinner">Processing... <span>&#9203;</span></div>
+    <div class="container">
+      <h2>Face Recognition Attendance</h2>
+      <div id="imageContainer">
+        <img id="uploadedImage" alt="Uploaded Image" />
+      </div>
+      <button id="uploadButton">Upload Image</button>
+      <div id="loadingSpinner">Processing... <span>&#9203;</span></div>
 
-    <!-- Table for displaying recognized names and IDs -->
-    <table id="attendanceTable">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>ID</th>
-        </tr>
-      </thead>
-      <tbody id="attendanceTableBody"></tbody>
-    </table>
+      <!-- Table for displaying recognized names and IDs -->
+      <table id="attendanceTable">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>ID</th>
+          </tr>
+        </thead>
+        <tbody id="attendanceTableBody"></tbody>
+      </table>
+    </div>
 
     <script>
       const API = "http://52.71.254.171:80";
@@ -103,7 +121,7 @@
       );
 
       async function getAttendance(imgData, successCallback, errorCallback) {
-        fetch(`http://52.71.254.171:80/upload_image`, {
+        fetch(`${API}/upload_image`, {
           method: "POST",
           headers: {
             Accept: "application/json",
